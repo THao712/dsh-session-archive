@@ -21,7 +21,7 @@
  */
 
 import { copyFile, mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 /** Cordis function-plugin name. */
 export const name = 'session-archive'
@@ -31,7 +31,11 @@ export const inject = ['workingDirectory', 'fs']
 
 const DEFAULTS = {
   enabled: true,
-  /** Workspace roots to manage; empty means every workspace. */
+  /**
+   * Workspace roots to manage explicitly. Empty means the default Workspace
+   * (`.../default-workspace`) only; project workspaces are left alone unless
+   * listed here.
+   */
   roots: [],
   /** Folder under each workspace root that holds one directory per conversation. */
   baseDir: 'conversations',
@@ -298,12 +302,31 @@ export function apply(ctx, config) {
   /** Sessions whose placement is in flight, to avoid two concurrent creations. */
   const pending = new WeakMap()
 
+  /**
+   * `roots: []` targets the default Workspace directory only. The default
+   * Workspace is the generic inbox for conversations that do not belong to a
+   * project; project workspaces are already organized by the user and should
+   * only be archived when listed explicitly.
+   */
+  const defaultWorkspaceRoot = (root) => {
+    let current = root
+    for (;;) {
+      if (basename(current).toLowerCase() === 'default-workspace') return current
+      const parent = dirname(current)
+      if (parent === current) return undefined
+      current = parent
+    }
+  }
+
   const targets = (session) => {
     const root = session?.header?.cwd
     if (typeof root !== 'string' || root.length === 0) return undefined
     if (!options.includeSubagents && Number(session.header?.delegationDepth ?? 0) > 0) return undefined
-    if (options.roots.length > 0 && !options.roots.some((entry) => samePath(entry, root))) return undefined
-    return root
+    if (options.roots.length === 0) return defaultWorkspaceRoot(root)
+    const matches = options.roots.filter((entry) => samePath(entry, root) || isInside(entry, root))
+    if (matches.length === 0) return undefined
+    matches.sort((left, right) => right.length - left.length)
+    return matches[0]
   }
 
   const chooseFolder = async (session, base) => {

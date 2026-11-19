@@ -2,7 +2,7 @@
 // `system-prompt/assemble` hook with a stub context and assert the folder
 // layout, the (quiet) working-directory switch, and idempotency.
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { apply, internals } from '../index.js'
@@ -156,7 +156,36 @@ try {
   assert.equal(child.calls.set.length, 0)
   assert.equal(child.calls.append.length, 0)
 
-  // 7. notifyModel: true keeps the service's loud switch available.
+  // 7. Empty roots target the default Workspace only; project workspaces stay untouched.
+  const defaultRoot = join(workspace, 'default-workspace')
+  await mkdir(defaultRoot, { recursive: true })
+  const defaultWorkspace = fakeHarness({
+    cwd: defaultRoot,
+    roots: [],
+    sessionId: 'session-jjjjjjjj-1111-2222-3333-444444444444',
+    createdAt: createdAt + 360_000,
+    prompt: 'default inbox conversation',
+    title: '默认工作区',
+  })
+  await assemble(defaultWorkspace)
+  assert.equal(defaultWorkspace.calls.append.length, 1)
+  assert.ok(defaultWorkspace.calls.append[0].data.cwd.startsWith(join(defaultRoot, 'conversations')))
+
+  const projectRoot = join(workspace, 'project')
+  await mkdir(projectRoot, { recursive: true })
+  const projectWorkspace = fakeHarness({
+    cwd: projectRoot,
+    roots: [],
+    sessionId: 'session-kkkkkkkk-1111-2222-3333-444444444444',
+    createdAt: createdAt + 420_000,
+    prompt: 'project conversation',
+    title: '项目工作区',
+  })
+  await assemble(projectWorkspace)
+  assert.equal(projectWorkspace.calls.append.length, 0)
+  assert.deepEqual(await readdir(projectRoot), [])
+
+  // 8. notifyModel: true keeps the service's loud switch available.
   const loud = fakeHarness({
     cwd: workspace,
     sessionId: 'session-ffffffff-1111-2222-3333-444444444444',
@@ -168,13 +197,13 @@ try {
   assert.equal(loud.calls.set.length, 1, 'notifyModel restores workingDirectory.set()')
   assert.equal(loud.calls.append.length, 0)
 
-  // 8. Slug hygiene: no separators, no dot-only names, bounded length.
+  // 9. Slug hygiene: no separators, no dot-only names, bounded length.
   assert.equal(internals.slugify('a/b\\c:d*e?f', 40), 'a-b-c-d-e-f')
   assert.equal(internals.slugify('   ', 40), '')
   assert.equal(Array.from(internals.slugify('x'.repeat(120), 10)).length, 10)
   assert.equal(internals.folderStamp(new Date(2026, 0, 2, 3, 4).getTime()), '2026-01-02_0304')
 
-  // 9. Two concurrent first prompts serialize their index read-modify-write.
+  // 10. Two concurrent first prompts serialize their index read-modify-write.
   const concurrentA = fakeHarness({
     cwd: workspace,
     sessionId: 'session-gggggggg-1111-2222-3333-444444444444',
@@ -192,7 +221,7 @@ try {
   assert.ok(concurrentIndex['session-gggggggg-1111-2222-3333-444444444444'])
   assert.ok(concurrentIndex['session-hhhhhhhh-1111-2222-3333-444444444444'])
 
-  // 10. A stale sidecar index lock left by a dead writer is recovered.
+  // 11. A stale sidecar index lock left by a dead writer is recovered.
   await writeFile(join(workspace, 'conversations', '.index.lock'), JSON.stringify({
     token: 'stale-writer',
     pid: 2147483646,
@@ -208,7 +237,7 @@ try {
   const staleIndex = JSON.parse(await readFile(join(workspace, 'conversations', 'index.json'), 'utf8'))
   assert.ok(staleIndex['session-iiiiiiii-1111-2222-3333-444444444444'])
 
-  // 11. A live owner keeps the sidecar index lock regardless of its age.
+  // 12. A live owner keeps the sidecar index lock regardless of its age.
   const liveLock = join(workspace, 'conversations', '.index.lock')
   await writeFile(liveLock, JSON.stringify({
     token: 'live-owner',

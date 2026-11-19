@@ -1,6 +1,6 @@
 {
   "name": "@local/session-archive",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "type": "module",
   "description": "Give every DeepSeek Harness conversation its own folder in the workspace and switch the session working directory into it.",
   "license": "MIT",

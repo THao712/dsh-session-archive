@@ -10,6 +10,12 @@ DeepSeek Harness 的默认工作区里，同一工作区的多个会话共用一
   AGENTS.md    工作区规则的本地副本
 ```
 
+## 设计目标
+
+这个插件主要解决**默认工作区**的混乱：默认工作区是未归属到具体项目的对话的通用收件箱，所有会话共享同一个工作目录，时间一长文件和中间产物容易混在一起。
+
+其他工作区通常是用户主动选择的项目目录，通常由项目自身的目录结构管理；同一个项目里的多个会话仍然共享该目录，DSH 不会自动按对话再分一层。因此插件默认只处理 `default-workspace`，不会在项目仓库里额外创建 `conversations/`。如果确实希望某个项目工作区也按会话隔离，把它的绝对路径加入 `roots`。
+
 ## 搭配会话清理插件效果更好
 
 推荐同时安装：
@@ -26,7 +32,9 @@ session-archive 负责“每个对话一个目录”，会话清理插件负责�
 - 清理会话记录已经不存在、但目录仍残留的孤儿目录；
 - 通过共享的 `conversations/.index.lock` 串行更新索引，避免两边互相覆盖。
 
-单独使用会话清理插件也可以清理日志、附件和工作区文件，只是没有按对话隔离的目录可管理。推荐使用兼容版本：session-archive `1.2.1` 与 session-cleaner `1.10.0` 或更高。
+单独使用会话清理插件也可以清理日志、附件和工作区文件，只是没有按对话隔离的目录可管理。推荐使用兼容版本：session-archive `1.3.0` 与 session-cleaner `1.10.0` 或更高。
+
+**安装 session-cleaner 不会自动下载或启用 session-archive。** 两者是独立的 bundle，需要分别安装；这样用户可以选择是否采用“每个对话一个目录”的布局。
 
 ## 行为
 
@@ -78,7 +86,7 @@ plugin_manager install_bundle  target: <仓库绝对路径>
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
 | `enabled` | `true` | `false` 时完全不介入 |
-| `roots` | `[]` | 要归档的工作区绝对路径；空数组表示所有工作区 |
+| `roots` | `[]` | 要额外归档的工作区绝对路径；空数组表示只处理 `default-workspace` |
 | `baseDir` | `conversations` | 会话文件夹的父目录 |
 | `layout` | `split` | `split` 建 `work/`+`out/`；`flat` 只建一层 |
 | `includeSubagents` | `false` | 子会话是否也单独归档 |
@@ -86,7 +94,7 @@ plugin_manager install_bundle  target: <仓库绝对路径>
 | `applyDirectory` | `true` | `false` 时只建目录、不切换工作目录（试运行用） |
 | `notifyModel` | `false` | `true` 时改用 `workingDirectory.set()`，会多出一条“工作目录已变更”的用户消息，模型通常会回一句“收到…” |
 
-`roots: []` 会处理所有工作区。如果只想归档某个工作区，在 `cordis.patch.yml` 中写入它的绝对路径：
+`roots: []` 只处理默认工作区。如果要额外归档某个项目工作区，在 `cordis.patch.yml` 中写入它的绝对路径：
 
 ```yaml
 config:
