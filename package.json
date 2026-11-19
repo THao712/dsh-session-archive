@@ -1,0 +1,47 @@
+{
+  "name": "@local/session-archive",
+  "version": "1.2.1",
+  "type": "module",
+  "description": "Give every DeepSeek Harness conversation its own folder in the workspace and switch the session working directory into it.",
+  "license": "MIT",
+  "author": "THao712",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/THao712/dsh-session-archive.git"
+  },
+  "homepage": "https://github.com/THao712/dsh-session-archive#readme",
+  "bugs": {
+    "url": "https://github.com/THao712/dsh-session-archive/issues"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.3"
+  },
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "test/smoke.mjs"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "workspace",
+    "archive",
+    "session-archive",
+    "conversation-folder"
+  ]
+}

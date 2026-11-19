@@ -1,0 +1,10 @@
+# Bundle patch: add the host half to the DSH plugin tree.
+# `roots: []` archives every workspace. Add absolute workspace paths here to
+# restrict the plugin, then restart DeepSeek Harness.
+- insert:
+    - id: session-archive
+      name: '@local/session-archive'
+      config:
+        roots: []
+        baseDir: conversations
+        layout: split
