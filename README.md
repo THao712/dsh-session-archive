@@ -52,14 +52,16 @@ session-archive 负责“每个对话一个目录”，会话清理插件负责�
 从 GitHub 安装（GitHub-only 分发，不依赖 npm）：
 
 ```text
-dsh plugin --profile <profile> add github:THao712/dsh-session-archive
+dsh plugin --profile <profile> add https://github.com/THao712/dsh-session-archive.git
 ```
 
-Desktop 用户也可以在插件管理器中使用 GitHub 地址安装：
+Desktop 用户也可以在插件管理器中使用同一地址安装：
 
 ```text
-plugin_manager install_bundle  target: github:THao712/dsh-session-archive
+plugin_manager install_bundle  target: https://github.com/THao712/dsh-session-archive.git
 ```
+
+如果本机 npm 的 Git 协议配置允许 HTTPS shorthand，也可以使用 `github:THao712/dsh-session-archive`；遇到 SSH publickey 错误时改用上面的 HTTPS 地址。
 
 本地开发时，把仓库绝对路径作为 bundle 安装：
 
